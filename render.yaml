@@ -9,6 +9,8 @@ services:
         fromDatabase:
           name: epl_db
           property: connectionString
+      - key: PYTHON_VERSION
+        value: 3.11.9
 
 databases:
   - name: epl_db
