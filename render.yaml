@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: epl-flask-app
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: epl_db
+          property: connectionString
+
+databases:
+  - name: epl_db
+    plan: free
