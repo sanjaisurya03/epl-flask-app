@@ -22,7 +22,7 @@ create_users_table()
 app = Flask(__name__)
 app.secret_key = "your_secret_key_here"  # Needed for session management
 
-API_KEY = "55705210e08be76accf77cfb6d94feb7"  # Replace with your API key
+API_KEY = "702a0b06711108dde3bdf6f339325ccc"  # Replace with your API key
 API_URL = "https://v3.football.api-sports.io/fixtures?live=all"
 
 genai.configure(api_key="AIzaSyBwip6xs4_zR7bm2XL0XHoqow1jZLqa58k")
