@@ -1,33 +1,38 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+API_KEY = os.getenv("FOOTBALL_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "fallback_secret_key_123")
+
+API_URL = "https://v3.football.api-sports.io/fixtures?live=all"
+
+app = Flask(__name__)
+app.secret_key = SECRET_KEY  # ✅ set before anything else
+
 import pickle
 import pandas as pd
-from flask import request, session
-from module import log_user_activity 
+from module import log_user_activity, create_logs_table, create_users_table
 import requests
 import numpy as np
 import google.generativeai as genai
 import json
 import io
-from module import create_logs_table 
 import base64
 import matplotlib.pyplot as plt
-import os
 from datetime import datetime
 from database import get_db_connection
-from module import create_users_table
 
-# Create the table when app starts
+# Create tables after app setup
 create_users_table()
 
-app = Flask(__name__)
-app.secret_key = "your_secret_key_here"  # Needed for session management
-
-API_KEY = "702a0b06711108dde3bdf6f339325ccc"  # Replace with your API key
-API_URL = "https://v3.football.api-sports.io/fixtures?live=all"
-
-genai.configure(api_key="AIzaSyBwip6xs4_zR7bm2XL0XHoqow1jZLqa58k")
-
+# Configure Gemini
+genai.configure(api_key=GEMINI_API_KEY)
 model_gemini = genai.GenerativeModel("models/gemini-2.5-flash")
+
 
 # -------------------------------
 # Load saved models and objects
