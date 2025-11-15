@@ -52,6 +52,26 @@ nav a:hover { color: #00bfff; }
     box-shadow: 0 0 15px rgba(0,0,0,0.3);
     text-align: center;
 }
+
+/* ScoreSight Title */
+.logo {
+    font-size: 32px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #00bfff;
+    text-shadow: 0 0 10px rgba(0,191,255,0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.logo i {
+    font-size: 32px;
+    color: #00bfff;
+}
+
+/* Other Styles */
 h2 {
     margin-bottom: 25px;
     color: #fff;
@@ -100,6 +120,7 @@ button {
     transition: 0.3s;
 }
 button:hover { background-color: #0099cc; }
+
 .register-link {
     margin-top: 15px;
     font-size: 14px;
@@ -136,12 +157,20 @@ footer {
 
 <div class="container">
     <div class="box">
+
+        <!-- ⭐ Football Icon + ScoreSight -->
+        <h1 class="logo">
+            <i class="fas fa-futbol"></i> ScoreSight
+        </h1>
+
         <h2>Login to Your Account</h2>
+
         {% with messages = get_flashed_messages() %}
             {% if messages %}
                 <div class="flash">{{ messages[0] }}</div>
             {% endif %}
         {% endwith %}
+
         <form action="{{ url_for('login') }}" method="POST">
             <label>Email</label>
             <input type="email" name="email" placeholder="Enter your email" required>
@@ -156,6 +185,7 @@ footer {
 
             <button type="submit">Login</button>
         </form>
+
         <div class="register-link">
             Don’t have an account? <a href="{{ url_for('register') }}">Register here</a>
         </div>

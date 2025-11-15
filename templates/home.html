@@ -27,14 +27,29 @@
         }
 
         header h1 { font-size: 26px; color: #fff; }
+
         nav a {
             color: #fff;
             text-decoration: none;
             margin-left: 20px;
             font-weight: 500;
             transition: 0.3s;
+            padding: 6px 12px;
+            border-radius: 6px;
         }
+
         nav a:hover { color: #00bfff; transform: scale(1.1); }
+
+        /* 🔥 Red Logout Button */
+        nav a.logout-btn {
+            background: #ff4d4d;
+            color: white !important;
+            border-radius: 6px;
+        }
+        nav a.logout-btn:hover {
+            background: #cc0000;
+            transform: scale(1.1);
+        }
 
         .hero {
             display: flex;
@@ -128,7 +143,7 @@
             <a href="{{ url_for('stats') }}">Stats</a>
             <a href="{{ url_for('chatbot') }}">AI Chat</a>
             <a href="{{ url_for('live') }}">Live</a>
-            <a href="{{ url_for('logout') }}">Logout</a>
+            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
         </nav>
     </header>
 

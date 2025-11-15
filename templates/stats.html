@@ -10,12 +10,18 @@
             padding: 0;
             box-sizing: border-box;
         }
+        html, body {
+            height: 100%;
+        }
         body {
+            display: flex;
+            flex-direction: column;
             font-family: "Poppins", sans-serif;
             background: linear-gradient(135deg, #001f3f, #004080);
             color: #fff;
-            min-height: 100vh;
         }
+
+        /* Header */
         header {
             display: flex;
             justify-content: space-between;
@@ -27,33 +33,52 @@
             top: 0;
             z-index: 1000;
         }
-       header h1 { font-size: 26px; color: #fff; 
-        }
+        header h1 { font-size: 26px; color: #fff; }
+
         nav a {
             color: #fff;
             text-decoration: none;
             margin-left: 25px;
             font-weight: 500;
+            padding: 6px 12px;
+            border-radius: 6px;
             transition: 0.3s;
         }
         nav a:hover {
             color: #00bfff;
             text-shadow: 0 0 10px #00bfff;
         }
+
+        /* 🔥 Red Logout Button */
+        nav .logout-btn {
+            background: #ff4d4d;
+            color: white !important;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+        nav .logout-btn:hover {
+            background: #cc0000;
+            transform: scale(1.05);
+        }
+
+        /* Main Container */
         .container {
             max-width: 1000px;
-            margin: 50px auto;
+            margin: 40px auto;
             background: rgba(255,255,255,0.1);
             border-radius: 20px;
             padding: 30px;
             backdrop-filter: blur(10px);
+            flex: 1;  /* Ensures container stretches so footer stays bottom */
         }
         h2 {
             color: #00bfff;
             text-align: center;
             margin-bottom: 20px;
         }
-        /* League Overview */
+
+        /* Overview Cards */
         .overview {
             display: flex;
             justify-content: space-between;
@@ -74,6 +99,8 @@
             display: block;
             margin-bottom: 6px;
         }
+
+        /* Form */
         form {
             display: flex;
             justify-content: center;
@@ -102,12 +129,15 @@
             transform: scale(1.05);
             background: linear-gradient(90deg, #0077a3, #005c80);
         }
+
         .error {
             color: #ff6b6b;
             text-align: center;
             margin-top: 20px;
             font-weight: bold;
         }
+
+        /* Table */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -126,13 +156,15 @@
         tr:nth-child(even) {
             background: rgba(255,255,255,0.05);
         }
+
+        /* Footer Always at Bottom */
         footer {
             text-align: center;
-            margin-top: 40px;
-            padding: 20px;
+            padding: 20px 10px;
             background: rgba(0,0,0,0.3);
             color: #ccc;
             font-size: 14px;
+            border-top: 1px solid rgba(255,255,255,0.1);
         }
     </style>
 </head>
@@ -146,7 +178,7 @@
             <a href="{{ url_for('stats') }}">Stats</a>
             <a href="{{ url_for('chatbot') }}">AI Chat</a>
             <a href="{{ url_for('live') }}">Live</a>
-            <a href="{{ url_for('logout') }}">Logout</a>
+            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
         </nav>
     </header>
 
@@ -200,6 +232,7 @@
 
         {% if error %}
         <p class="error">{{ error }}</p>
+
         {% elif matches is defined and matches is not none and not matches.empty %}
         <table>
             <tr>

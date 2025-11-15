@@ -1,5 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 import os
+import time
+from functools import lru_cache
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -20,6 +22,8 @@ import requests
 import numpy as np
 import google.generativeai as genai
 import json
+import re
+import traceback
 import io
 import base64
 import matplotlib.pyplot as plt
@@ -135,6 +139,182 @@ teams = [
     "Sunderland", "Swansea", "Tottenham", "Watford", "West Brom", "West Ham",
     "Wigan", "Wolves"
 ]
+
+# -------------------------------
+# Football-Data.org Live Info
+# -------------------------------
+
+
+FD_API_KEY = os.getenv("FOOTBALL_DATA_API_KEY")  # stored safely in .env
+FD_BASE_URL = "https://api.football-data.org/v4"
+
+# -------------------------------
+# 🧠 Simple In-Memory Cache
+# -------------------------------
+_cache = {}
+
+def cache_get(key):
+    entry = _cache.get(key)
+    if not entry:
+        return None
+    ts, ttl, val = entry
+    if time.time() - ts > ttl:
+        _cache.pop(key, None)
+        return None
+    return val
+
+def cache_set(key, val, ttl=300):
+    """Store value for 5 minutes (default TTL 300s)."""
+    _cache[key] = (time.time(), ttl, val)
+
+# -------------------------------
+# 📡 API Fetch Helper
+# -------------------------------
+def fd_get(path, params=None):
+    """Generic GET helper for Football-Data.org"""
+    headers = {"X-Auth-Token": FD_API_KEY}
+    url = f"{FD_BASE_URL}{path}"
+    try:
+        r = requests.get(url, headers=headers, params=params, timeout=10)
+        r.raise_for_status()
+        return r.json()
+    except Exception as e:
+        print(f"⚠️ Football-Data request failed: {e}")
+        return {}
+
+# -------------------------------
+# 🏟️ Team Helpers
+# -------------------------------
+# ✅ fallback EPL teams with IDs (for offline or 403 cases)
+FALLBACK_TEAMS = {
+    "arsenal": 57,
+    "aston villa": 58,
+    "chelsea": 61,
+    "everton": 62,
+    "fulham": 63,
+    "liverpool": 64,
+    "manchester city": 65,
+    "manchester united": 66,
+    "newcastle united": 67,
+    "nottingham forest": 351,
+    "tottenham hotspur": 73,
+    "west ham united": 563,
+    "wolves": 76,
+    "brighton": 397,
+    "brentford": 402,
+    "bournemouth": 1044,
+    "crystal palace": 354,
+    "sheffield united": 356,
+    "luton town": 389,
+    "burnley": 328
+}
+
+@lru_cache(maxsize=1)
+def get_teams():
+    """Fetch and cache all EPL team names + IDs. Falls back to local list."""
+    try:
+        data = fd_get("/competitions/PL/teams")
+        teams_data = {t["name"].lower(): t["id"] for t in data.get("teams", [])}
+        if teams_data:
+            print(f"✅ Loaded {len(teams_data)} teams from Football-Data.org")
+            return teams_data
+        else:
+            print("⚠️ Using fallback teams (API returned empty).")
+            return FALLBACK_TEAMS
+    except Exception as e:
+        print("⚠️ Error fetching teams:", e)
+        return FALLBACK_TEAMS
+
+
+def normalize_team_name(name):
+    """Normalize team name for fuzzy matching."""
+    name = name.lower()
+    name = re.sub(r"[^a-z0-9 ]", "", name)  # remove punctuation
+    name = name.replace("fc", "").replace("afc", "").strip()
+    return name
+
+def find_team_id(name):
+    """Fuzzy match user input → team ID (handles nicknames and partials)."""
+    if not name:
+        return None
+    name_clean = normalize_team_name(name)
+    teams = get_teams()
+    normalized = {normalize_team_name(k): v for k, v in teams.items()}
+
+    # Direct match
+    if name_clean in normalized:
+        return normalized[name_clean]
+
+    # Partial match
+    for k, v in normalized.items():
+        if name_clean in k or k in name_clean:
+            return v
+
+    return None  # ✅ end cleanly
+
+# -------------------------------
+# 📊 Match & Standings Helpers
+# -------------------------------
+def get_last_match(team_id):
+    """Get most recent finished match for a team."""
+    key = f"last:{team_id}"
+    if cached := cache_get(key):
+        return cached
+    try:
+        res = fd_get(f"/teams/{team_id}/matches", {"status": "FINISHED", "limit": 1})
+        match = res.get("matches", [{}])[0]
+        cache_set(key, match)
+        return match
+    except Exception as e:
+        print("⚠️ get_last_match error:", e)
+        return None
+
+def get_next_match(team_id):
+    """Get next scheduled match for a team."""
+    key = f"next:{team_id}"
+    if cached := cache_get(key):
+        return cached
+    try:
+        res = fd_get(f"/teams/{team_id}/matches", {"status": "SCHEDULED", "limit": 1})
+        match = res.get("matches", [{}])[0]
+        cache_set(key, match)
+        return match
+    except Exception as e:
+        print("⚠️ get_next_match error:", e)
+        return None
+
+def get_team_standings(team_id):
+    """Return current EPL standings entry for a team."""
+    key = f"stand:{team_id}"
+    if cached := cache_get(key):
+        return cached
+    try:
+        standings = fd_get("/competitions/PL/standings")
+        for table in standings.get("standings", []):
+            if table.get("type") == "TOTAL":
+                for entry in table.get("table", []):
+                    if entry["team"]["id"] == team_id:
+                        cache_set(key, entry)
+                        return entry
+    except Exception as e:
+        print("⚠️ standings error:", e)
+    return None
+
+# -------------------------------
+# 📝 Utility Formatter
+# -------------------------------
+def format_match(match):
+    """Readable string for a match."""
+    if not match:
+        return "No match data found."
+    home = match["homeTeam"]["name"]
+    away = match["awayTeam"]["name"]
+    date = match["utcDate"].split("T")[0]
+    status = match.get("status", "SCHEDULED")
+    if status == "FINISHED":
+        score = match.get("score", {}).get("fullTime", {})
+        return f"{home} {score.get('home', 0)} - {score.get('away', 0)} {away} (on {date})"
+    return f"{home} vs {away} on {date}"
 
 # -------------------------------
 # Routes
@@ -575,35 +755,46 @@ def predict_goals():
 # -------------------------------
 # Gemini Chatbot (GET + POST)
 # -------------------------------
+
 @app.route("/chatbot", methods=["GET", "POST"])
 def chatbot():
     if request.method == "GET":
-        # Reset session when the page is loaded fresh
         session["mode"] = None
         session["chat_state"] = {}
+        session["last_reply"] = ""
         return render_template("chatbot.html")
 
-    # Handle user input (POST)
     data = request.get_json()
-    user_message = data.get("query", "").strip()
+    user_message = data.get("query", "").strip().lower()
     chat_state = session.get("chat_state", {})
     mode = session.get("mode")
 
-    # === Step 1: Choose Mode ===
+    # -------------------------------
+    # STEP 1️⃣: Mode Selection
+    # -------------------------------
     if not mode:
-        if "predict" in user_message.lower():
+        if "predict" in user_message:
             session["mode"] = "predict"
             session["chat_state"] = {}
-            return jsonify({"reply": "Okay! Let’s start the prediction. What’s the home team name?"})
+            return jsonify({
+                "reply": "Okay! Let’s start the prediction. What’s the home team name?"
+            })
 
-        elif "question" in user_message.lower():
+        elif "question" in user_message:
             session["mode"] = "question"
-            return jsonify({"reply": "Sure! You can now ask any EPL or football-related question."})
+            session["chat_state"] = {"awaiting_query": False}
+            return jsonify({
+                "reply": "Sure! You can now ask about EPL — teams, players, standings, or recent matches."
+            })
 
         else:
-            return jsonify({"reply": "Hi! Would you like to 'Predict Match' or 'Ask Question'?"})
+            return jsonify({
+                "reply": "👋 Hi there! Would you like to 'Predict Match' or 'Ask Question'?"
+            })
 
-    # === Mode 1: Predict Match ===
+    # -------------------------------
+    # STEP 2️⃣: Predict Match Mode (AI + Stats)
+    # -------------------------------
     if mode == "predict":
         try:
             if "home_team" not in chat_state:
@@ -651,78 +842,210 @@ def chatbot():
             print("Prediction error:", e)
             return jsonify({"reply": "Invalid input! Please enter numeric values properly."})
 
-    # === Mode 2: Ask Question (Gemini Normal Chat) ===
+
+    # -------------------------------
+    # STEP 3️⃣: Ask Question Mode
+    # -------------------------------
     elif mode == "question":
         try:
+            query = user_message
+
+            # 🔹 Recognize synonyms and fuzzy names
+            aliases = {
+                "man city": "manchester city",
+                "man united": "manchester united",
+                "man utd": "manchester united",
+                "spurs": "tottenham hotspur",
+                "wolves": "wolverhampton wanderers",
+                "brighton": "brighton and hove albion",
+                "newcastle": "newcastle united",
+            }
+            for short, full in aliases.items():
+                if short in query:
+                    query = query.replace(short, full)
+
+            # 🔹 Handle "give detail" or similar phrases
+            if any(phrase in query for phrase in [
+                "give detail", "more info", "details", "more about", "expand", "explain more", "tell me more"
+            ]):
+                last_reply = session.get("last_reply", "")
+                if not last_reply:
+                    return jsonify({"reply": "No recent match or topic to expand on."})
+                response = model_gemini.generate_content(
+                    f"Expand on this EPL topic in 2-3 short football-style sentences without repeating: {last_reply}"
+                ).text
+                return jsonify({"reply": response})
+
+            # Identify team (if any)
+            team_id = find_team_id(query)
+            team_name = None
+            if team_id:
+                team_name = [k for k, v in get_teams().items() if v == team_id][0].title()
+
+            # 🔹 Next Match
+            if "next match" in query or "upcoming" in query:
+                if not team_id:
+                    return jsonify({"reply": "Please mention a team, e.g. 'Next match for Arsenal'."})
+                m = get_next_match(team_id)
+                if not m:
+                    return jsonify({"reply": f"⚠️ No upcoming match found for {team_name or 'that team'}."})
+                info = format_match(m)
+                session["last_reply"] = info
+                summary = model_gemini.generate_content(f"Summarize {info} briefly in one line.").text
+                return jsonify({"reply": f"{summary}"})
+
+            # 🔹 Last Match
+            if "last match" in query or "previous" in query or "past" in query:
+                if not team_id:
+                    return jsonify({"reply": "Please mention a team, e.g. 'Last match of Chelsea'."})
+                m = get_last_match(team_id)
+                if not m:
+                    return jsonify({"reply": f"⚠️ No past match data found for {team_name or 'that team'}."})
+                info = format_match(m)
+                session["last_reply"] = info
+                summary = model_gemini.generate_content(f"Summarize {info} briefly in one football-style sentence.").text
+                return jsonify({"reply": f"{summary}"})
+
+            # 🔹 Team Stats
+            if any(k in query for k in ["stats", "form", "performance", "rank", "standing", "wins", "losses"]):
+                if not team_id:
+                    return jsonify({"reply": "Please mention a team, e.g. 'Liverpool stats'."})
+                stats = get_team_standings(team_id)
+                if not stats:
+                    return jsonify({"reply": "No standings data available right now."})
+                short = (
+                    f"{stats['team']['name']}: {stats['points']} pts, "
+                    f"W{stats['won']} D{stats['draw']} L{stats['lost']} (Rank {stats['position']})"
+                )
+                session["last_reply"] = short
+                summary = model_gemini.generate_content(f"Summarize this in one short football-style line: {short}").text
+                return jsonify({"reply": f"{summary}"})
+
+            # 🔹 Generic Question (EPL knowledge)
             response = model_gemini.generate_content(
-                f"Answer this football or EPL-related question in a brief and clear way: {user_message}"
-            )
-            return jsonify({"reply": response.text})
+                f"Answer this EPL-related question briefly in one line: {query}"
+            ).text
+            session["last_reply"] = response
+            return jsonify({"reply": response})
+
         except Exception as e:
-            print("Gemini error:", e)
-            return jsonify({"reply": "Sorry, I couldn’t get that. Try again!"})
+            print("Gemini/Football-Data error:", e)
+            traceback.print_exc()
+            return jsonify({
+                "reply": "⚠️ Sorry, EPL data isn’t available right now."
+            })
 
 def run_full_prediction(chat_state):
     try:
-        # Collect user inputs
-        home_team = chat_state["home_team"]
-        away_team = chat_state["away_team"]
+        home_team = chat_state["home_team"].title()
+        away_team = chat_state["away_team"].title()
         HS, AS, HST, AST, HF, AF = (
             chat_state["HS"], chat_state["AS"], chat_state["HST"],
             chat_state["AST"], chat_state["HF"], chat_state["AF"]
         )
 
-        # Encode team names
-        home_encoded = home_encoder.transform([home_team])[0]
-        away_encoded = away_encoder.transform([away_team])[0]
+        print(f"🔍 Running AI prediction for {home_team} vs {away_team}")
+        print(f"➡️ HS={HS}, AS={AS}, HST={HST}, AST={AST}, HF={HF}, AF={AF}")
 
-        # Derived stats
+        # ✅ Encode teams safely
+        try:
+            home_encoded = home_encoder.transform([home_team])[0]
+        except Exception as e:
+            print(f"⚠️ Home encoder failed: {e}")
+            home_encoded = teams.index(home_team) if home_team in teams else 0
+
+        try:
+            away_encoded = away_encoder.transform([away_team])[0]
+        except Exception as e:
+            print(f"⚠️ Away encoder failed: {e}")
+            away_encoded = teams.index(away_team) if away_team in teams else 0
+
+        # ✅ Derived features
         TotalGoals = HS + AS
         ShotAccuracy_Home = HST / (HS + 1e-5)
         ShotAccuracy_Away = AST / (AS + 1e-5)
         ShotDiff = HS - AS
-        FoulDiff = HF - AF
+        ShotOnTargetDiff = HST - AST
+        CornerRatio = 0
+        CornerDiff = 0
+        FoulDifference = HF - AF
+        Home_CardRatio = 0
+        Away_CardRatio = 0
+        AttackBalance = ShotAccuracy_Home / (ShotAccuracy_Home + ShotAccuracy_Away + 1e-5)
+        DayOfWeek_encoded = datetime.now().weekday()
+        Season_encoded = datetime.now().year
+        Year, Month, Day = datetime.now().year, datetime.now().month, datetime.now().day
 
-        # Build feature set
+        # ✅ Match feature dictionary
         match_features = {
             'HomeTeam': home_encoded,
             'AwayTeam': away_encoded,
             'HS': HS, 'AS': AS,
             'HST': HST, 'AST': AST,
+            'HC': 0, 'AC': 0,
             'HF': HF, 'AF': AF,
+            'HY': 0, 'AY': 0,
+            'HR': 0, 'AR': 0,
             'TotalGoals': TotalGoals,
             'ShotAccuracy_Home': ShotAccuracy_Home,
             'ShotAccuracy_Away': ShotAccuracy_Away,
             'ShotDiff': ShotDiff,
-            'FoulDifference': FoulDiff,
+            'ShotOnTargetDiff': ShotOnTargetDiff,
+            'CornerRatio': CornerRatio,
+            'CornerDiff': CornerDiff,
+            'FoulDifference': FoulDifference,
+            'Home_CardRatio': Home_CardRatio,
+            'Away_CardRatio': Away_CardRatio,
+            'AttackBalance': AttackBalance,
+            'DayOfWeek_encoded': DayOfWeek_encoded,
+            'Season_encoded': Season_encoded,
+            'Year': Year,
+            'Month': Month,
+            'Day': Day
         }
 
+        # ✅ Prepare DataFrame and scale
         match_df = pd.DataFrame([match_features])
         match_df = match_df.reindex(columns=fulltime_feature_columns, fill_value=0)
         match_scaled = fulltime_scaler.transform(match_df)
 
-        # Predict result
+        # ✅ Predict and interpret label
         prediction = fulltime_model.predict(match_scaled)[0]
         pred_proba = fulltime_model.predict_proba(match_scaled)[0]
         probabilities = {cls: round(float(prob)*100, 2) for cls, prob in zip(fulltime_model.classes_, pred_proba)}
 
-        # Generate natural summary using Gemini
+        # 🧩 Map prediction to readable label
+        if prediction == "H":
+            readable_pred = f"{home_team} Win"
+        elif prediction == "A":
+            readable_pred = f"{away_team} Win"
+        else:
+            readable_pred = "Draw"
+
+        print(f"✅ Prediction: {readable_pred}")
+        print(f"📊 Probabilities: {probabilities}")
+
+        # 🧠 Gemini summary (with natural text)
         summary_prompt = f"""
-        The model predicted '{prediction}' for the match between {home_team} and {away_team}.
+        The model predicted a '{readable_pred}' for the match between {home_team} and {away_team}.
         Probabilities: {probabilities}.
-        Explain this result in a football analysis style with short reasoning.
+        Write a short football-style summary (2 lines) for fans.
         """
         summary = model_gemini.generate_content(summary_prompt).text
 
-        # Reset session after completion
+        print(f"🎙️ Gemini Summary: {summary}")
+
+        # ✅ Reset chat state
         session["mode"] = None
         session["chat_state"] = {}
 
-        return jsonify({"reply": f"🏁 Prediction: {prediction}\n\n{summary}"})
+        return jsonify({"reply": f"🏁 Prediction: {readable_pred}\n\n{summary}"})
 
     except Exception as e:
-        print("run_full_prediction error:", e)
-        return jsonify({"reply": "Something went wrong while predicting the match."})
+        print("❌ run_full_prediction error:", e)
+        traceback.print_exc()
+        return jsonify({"reply": f"⚠️ Prediction failed: {e}"})
+
 
 @app.before_request
 def track_user_activity():

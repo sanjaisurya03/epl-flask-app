@@ -1,282 +1,387 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>EPL AI Chat Assistant</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: "Poppins", sans-serif;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Poppins", sans-serif; }
+
     body {
       background: linear-gradient(135deg, #00264d, #004080);
-      color: #fff;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+      color: #fff; height: 100vh;
+      display: flex; flex-direction: column; overflow: hidden;
     }
+
     header {
-      background: rgba(0,0,0,0.3);
-      backdrop-filter: blur(8px);
-      padding: 15px 40px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      border-bottom-left-radius: 20px;
-      border-bottom-right-radius: 20px;
+      background: rgba(0,0,0,0.3); backdrop-filter: blur(8px);
+      padding: 15px 40px; display: flex; justify-content: space-between; align-items: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3); position: sticky; top: 0; z-index: 100;
+      border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;
     }
+
     header h1 { font-size: 24px; color: #fff; }
+
     nav a {
-      color: #fff;
-      text-decoration: none;
-      margin-left: 20px;
-      font-weight: 500;
-      transition: 0.3s;
+      color: #fff; text-decoration: none; margin-left: 20px; font-weight: 500; transition: 0.3s;
     }
+
     nav a:hover { color: #00bfff; transform: scale(1.1); }
-    .chat-container {
-      flex: 1;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-      overflow: hidden;
-    }
-    .chat-box {
-      background: rgba(255,255,255,0.1);
-      backdrop-filter: blur(10px);
-      border-radius: 25px;
-      width: 90%;
-      max-width: 1000px;
-      height: 550px;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 4px 25px rgba(0,0,0,0.4);
-      overflow: hidden;
-      border: 1px solid rgba(255,255,255,0.15);
-    }
-    .chat-header {
-      background: linear-gradient(90deg, #00bfff, #0099cc);
-      color: #fff;
-      padding: 15px;
-      font-size: 18px;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      border-top-left-radius: 25px;
-      border-top-right-radius: 25px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-    }
-    .chat-window {
-      flex: 1;
-      padding: 20px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      scroll-behavior: smooth;
-    }
-    .message {
-      max-width: 75%;
-      padding: 12px 16px;
-      border-radius: 20px;
-      word-wrap: break-word;
-      white-space: pre-line;
-      line-height: 1.5;
-      animation: fadeIn 0.3s ease-in;
-    }
-    .bot {
-      align-self: flex-start;
-      background: rgba(255,255,255,0.15);
-      color: #e0e0e0;
-      border-top-left-radius: 5px;
-      border-bottom-left-radius: 20px;
-      border-bottom-right-radius: 20px;
-    }
-    .user {
-      align-self: flex-end;
-      background: linear-gradient(90deg, #00bfff, #0099cc);
-      color: #fff;
-      border-top-right-radius: 5px;
-      border-bottom-right-radius: 20px;
-      border-bottom-left-radius: 20px;
-    }
-    .input-area {
-      display: flex;
-      align-items: center;
-      background: rgba(0,0,0,0.3);
-      padding: 10px 15px;
-      border-top: 1px solid rgba(255,255,255,0.1);
-      border-bottom-left-radius: 25px;
-      border-bottom-right-radius: 25px;
-      backdrop-filter: blur(5px);
-      gap: 8px;
-    }
-    .input-area input {
-      flex: 1;
-      padding: 12px 15px;
-      border: none;
-      outline: none;
-      background: rgba(255,255,255,0.15);
-      color: #fff;
-      border-radius: 25px;
-      font-size: 15px;
-      transition: 0.3s;
-    }
-    .input-area input:focus {
-      background: rgba(255,255,255,0.25);
-    }
-    .input-area button {
-      background: none;
-      border: none;
-      color: #00bfff;
-      font-size: 18px;
-      cursor: pointer;
-      transition: 0.3s;
-      border-radius: 25px;
+
+    /* 🔴 Logout button styling */
+    nav a.logout-btn {
+      background: #ff4d4d;
       padding: 8px 14px;
-      white-space: nowrap;
+      border-radius: 8px;
+      font-weight: 600;
+      color: #fff !important;
+      transition: 0.3s;
     }
-    .input-area button:hover {
-      background: rgba(0,191,255,0.2);
-      color: #00ffff;
+
+    nav a.logout-btn:hover {
+      background: #ff1a1a;
       transform: scale(1.05);
     }
+
+    .chat-container {
+      flex: 1; display: flex; justify-content: center; align-items: center;
+      padding: 20px; overflow: hidden;
+    }
+
+    .chat-box {
+      background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);
+      border-radius: 25px; width: 90%; max-width: 950px; height: 500px;
+      display: flex; flex-direction: column; box-shadow: 0 4px 25px rgba(0,0,0,0.4);
+      overflow: hidden; border: 1px solid rgba(255,255,255,0.15);
+    }
+
+    .chat-header {
+      background: linear-gradient(90deg, #00bfff, #0099cc);
+      color: #fff; padding: 15px; font-size: 18px; font-weight: 600;
+      display: flex; align-items: center; justify-content: space-between;
+      border-top-left-radius: 25px; border-top-right-radius: 25px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+
+    .chat-header-left { display: flex; align-items: center; gap: 10px; }
+
+    .header-right {
+      display: flex; align-items: center; gap: 10px;
+    }
+
+    .clear-btn, .voice-toggle {
+      background: none; border: none; color: #fff;
+      font-size: 16px; cursor: pointer; transition: 0.3s; padding: 6px 10px;
+      border-radius: 8px;
+    }
+
+    .clear-btn:hover, .voice-toggle:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    .chat-window {
+      flex: 1; padding: 20px; overflow-y: auto; display: flex;
+      flex-direction: column; gap: 12px; scroll-behavior: smooth;
+    }
+
+    .message {
+      max-width: 75%; padding: 12px 16px; border-radius: 20px;
+      word-wrap: break-word; white-space: pre-line; line-height: 1.5;
+      animation: fadeIn 0.3s ease-in;
+    }
+
+    .bot {
+      align-self: flex-start; background: rgba(255,255,255,0.15);
+      color: #e0e0e0; border-top-left-radius: 5px;
+      border-bottom-left-radius: 20px; border-bottom-right-radius: 20px;
+    }
+
+    .user {
+      align-self: flex-end; background: linear-gradient(90deg, #00bfff, #0099cc);
+      color: #fff; border-top-right-radius: 5px;
+      border-bottom-right-radius: 20px; border-bottom-left-radius: 20px;
+    }
+
+    .input-area {
+      display: flex; align-items: center; background: rgba(0,0,0,0.3);
+      padding: 10px 12px; border-top: 1px solid rgba(255,255,255,0.1);
+      border-bottom-left-radius: 25px; border-bottom-right-radius: 25px;
+      backdrop-filter: blur(5px); gap: 6px;
+    }
+
+    .input-area input {
+      flex: 1; padding: 10px 12px; border: none; outline: none;
+      background: rgba(255,255,255,0.15); color: #fff;
+      border-radius: 20px; font-size: 14px; transition: 0.3s;
+    }
+
+    .input-area input:focus { background: rgba(255,255,255,0.25); }
+
+    .input-area button {
+      background: none; border: none; color: #00bfff;
+      font-size: 15px; cursor: pointer; transition: 0.3s;
+      border-radius: 20px; padding: 6px 10px;
+    }
+
+    .input-area button:hover {
+      background: rgba(0,191,255,0.2); color: #00ffff; transform: scale(1.05);
+    }
+
+    #predictBtn, #askBtn {
+      padding: 6px 12px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 15px;
+      font-weight: 500;
+    }
+
+    #askBtn { width: auto; }
+
     .send-icon {
-      font-size: 22px;
-      padding: 10px;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      font-size: 20px; padding: 8px; border-radius: 50%; width: 35px; height: 35px;
+      display: flex; align-items: center; justify-content: center;
     }
+
     footer {
-      text-align: center;
-      padding: 15px;
-      font-size: 14px;
-      color: #ccc;
-      background: rgba(0,0,0,0.2);
-      backdrop-filter: blur(5px);
-      border-top-left-radius: 20px;
-      border-top-right-radius: 20px;
+      text-align: center; padding: 15px; font-size: 14px; color: #ccc;
+      background: rgba(0,0,0,0.2); backdrop-filter: blur(5px);
+      border-top-left-radius: 20px; border-top-right-radius: 20px;
     }
-    ::-webkit-scrollbar {
-      width: 8px;
-    }
+
+    ::-webkit-scrollbar { width: 8px; }
     ::-webkit-scrollbar-thumb {
-      background: linear-gradient(180deg, #00bfff, #0099cc);
-      border-radius: 10px;
+      background: linear-gradient(180deg, #00bfff, #0099cc); border-radius: 10px;
     }
-    ::-webkit-scrollbar-track {
-      background: rgba(255,255,255,0.05);
-    }
+    ::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
+
 <body>
+
   <header>
     <h1>EPL Match Predictor</h1>
+
     <nav>
       <a href="{{ url_for('home') }}">Home</a>
       <a href="{{ url_for('predict') }}">Predict</a>
       <a href="{{ url_for('stats') }}">Stats</a>
       <a href="{{ url_for('chatbot') }}">AI Chat</a>
       <a href="{{ url_for('live') }}">Live</a>
-      <a href="{{ url_for('logout') }}">Logout</a>
+      <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
     </nav>
   </header>
 
   <div class="chat-container">
     <div class="chat-box">
-      <div class="chat-header"><i class="fa-solid fa-robot"></i> EPL AI Assistant</div>
+      <div class="chat-header">
+        <div class="chat-header-left">
+          <i class="fa-solid fa-robot"></i>
+          <span>EPL AI Assistant</span>
+        </div>
+
+        <div class="header-right">
+          <button class="voice-toggle" id="voiceToggle"><i class="fa-solid fa-volume-high"></i></button>
+          <button class="clear-btn" id="clearChat"><i class="fa-solid fa-broom"></i> Clear</button>
+        </div>
+      </div>
+
       <div class="chat-window" id="chatWindow">
         <div class="message bot">👋 Hi there! Would you like to “Predict Match” or “Ask Question”?</div>
       </div>
+
       <div class="input-area">
-        <input id="userInput" type="text" placeholder="Type your message...">
+        <input id="userInput" type="text" placeholder="Type or speak your message...">
+        <button id="voiceBtn"><i class="fa-solid fa-microphone"></i></button>
         <button id="predictBtn">⚽ Predict Match</button>
         <button id="askBtn">❓ Ask Question</button>
         <button id="sendBtn" class="send-icon"><i class="fa-solid fa-paper-plane"></i></button>
       </div>
+
     </div>
   </div>
 
   <footer>&copy; 2025 EPL Match Predictor</footer>
 
-  <script>
-    const sendBtn = document.getElementById("sendBtn");
-    const userInput = document.getElementById("userInput");
-    const chatWindow = document.getElementById("chatWindow");
-    const predictBtn = document.getElementById("predictBtn");
-    const askBtn = document.getElementById("askBtn");
-
-    async function sendMessage() {
-      const text = userInput.value.trim();
-      if (!text) return;
-      addMessage(text, "user");
-      userInput.value = "";
-
-      const loadingMsg = addMessage("Thinking...", "bot");
-
-      try {
-        const response = await fetch("/chatbot", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ query: text })
-        });
-        const data = await response.json();
-        loadingMsg.remove();
-        addMessage(data.reply || "Sorry, I couldn’t process that.", "bot");
-      } catch (err) {
-        loadingMsg.remove();
-        addMessage("⚠️ Server error. Please try again.", "bot");
-      }
-    }
-
-    function addMessage(text, sender) {
-      const msg = document.createElement("div");
-      msg.className = `message ${sender}`;
-
-      text = text
-        .replace(/\*\*(.*?)\*\*/g, "<b>$1</b>")
-        .replace(/\*(.*?)\*/g, "<i>$1</i>")
-        .replace(/\n/g, "<br>");
-
-      msg.innerHTML = text;
-      chatWindow.appendChild(msg);
-      chatWindow.scrollTop = chatWindow.scrollHeight;
-      return msg;
-    }
-
-    sendBtn.addEventListener("click", sendMessage);
-    userInput.addEventListener("keypress", (e) => e.key === "Enter" && sendMessage());
-
-    predictBtn.addEventListener("click", () => {
-      userInput.value = "Predict Match";
-      sendMessage();
-    });
-
-    askBtn.addEventListener("click", () => {
-      userInput.value = "Ask Question";
-      sendMessage();
-    });
-  </script>
-
 </body>
-</html>
+<script>
+  const sendBtn = document.getElementById("sendBtn");
+  const userInput = document.getElementById("userInput");
+  const chatWindow = document.getElementById("chatWindow");
+  const predictBtn = document.getElementById("predictBtn");
+  const askBtn = document.getElementById("askBtn");
+  const voiceBtn = document.getElementById("voiceBtn");
+  const clearChat = document.getElementById("clearChat");
+  const voiceToggle = document.getElementById("voiceToggle");
+
+  let voiceEnabled = true;
+  let voicesLoaded = false;
+  let availableVoices = [];
+
+  // 🌟 Toggle voice output
+  voiceToggle.addEventListener("click", () => {
+    voiceEnabled = !voiceEnabled;
+    voiceToggle.innerHTML = voiceEnabled
+      ? '<i class="fa-solid fa-volume-high"></i>'
+      : '<i class="fa-solid fa-volume-xmark"></i>';
+  });
+
+  // 🌟 Load voice list
+  function initVoices() {
+    availableVoices = window.speechSynthesis.getVoices();
+    if (availableVoices.length > 0) voicesLoaded = true;
+    else setTimeout(initVoices, 300);
+  }
+
+  if ("speechSynthesis" in window) {
+    window.speechSynthesis.onvoiceschanged = initVoices;
+    initVoices();
+  }
+
+  // 🌟 Send message to backend
+  async function sendMessage() {
+    const text = userInput.value.trim();
+    if (!text) return;
+
+    addMessage(text, "user");
+    userInput.value = "";
+
+    const loadingMsg = addMessage("Thinking...", "bot");
+
+    try {
+      const response = await fetch("/chatbot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: text })
+      });
+
+      const data = await response.json();
+      loadingMsg.remove();
+
+      const clean = cleanMarkdown(data.reply || "Sorry, I couldn’t process that.");
+      addMessage(clean, "bot");
+
+      if (voiceEnabled) speak(clean);
+
+    } catch (err) {
+      loadingMsg.remove();
+      addMessage("⚠️ Server error. Please try again.", "bot");
+    }
+  }
+
+  // 🌟 Clean markdown
+  function cleanMarkdown(text) {
+    return text
+      .replace(/\*\*(.*?)\*\*/g, "$1")
+      .replace(/\*(.*?)\*/g, "$1")
+      .replace(/_(.*?)_/g, "$1")
+      .replace(/`(.*?)`/g, "$1")
+      .replace(/#+\s?(.*)/g, "$1")
+      .replace(/\n\s*\n/g, "\n")
+      .trim();
+  }
+
+  // 🌟 Add message UI
+  function addMessage(text, sender) {
+    const msg = document.createElement("div");
+    msg.className = `message ${sender}`;
+    msg.innerHTML = text
+      .replaceAll("<", "&lt;").replaceAll(">", "&gt;")
+      .replace(/\n/g, "<br>");
+
+    chatWindow.appendChild(msg);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+
+    return msg;
+  }
+
+  // 🌟 Clear chat
+  clearChat.addEventListener("click", () => {
+    chatWindow.innerHTML =
+      '<div class="message bot">👋 Chat cleared! Start again — would you like “Predict Match” or “Ask Question”?</div>';
+  });
+
+  // 🎙️ FIXED SPEECH RECOGNITION
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recognition;
+
+  if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.lang = "en-GB";
+    recognition.continuous = false;      // ❗ Prevent multiple triggers
+    recognition.interimResults = false;  // ❗ Only final result
+
+    recognition.onresult = (event) => {
+      let finalTranscript = "";
+
+      for (let i = 0; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript + " ";
+        }
+      }
+
+      finalTranscript = finalTranscript.trim();
+
+      if (finalTranscript.length > 0) {
+        userInput.value = finalTranscript;
+        sendMessage();  // send only after full sentence recognized
+      }
+    };
+
+    recognition.onerror = (e) => {
+      console.error("Speech recognition error:", e.error);
+    };
+
+  } else {
+    voiceBtn.disabled = true;
+    voiceBtn.title = "Voice input not supported";
+  }
+
+  // 🎤 Start listening
+  voiceBtn.addEventListener("click", () => {
+    try {
+      recognition.start();
+    } catch (_) {
+      // ignore "recognition already started"
+    }
+  });
+
+  // 🔊 Speak output
+  function speak(text) {
+    if (!("speechSynthesis" in window) || !voicesLoaded) return;
+
+    const clean = text.replace(/<br>/g, " ").replace(/\s+/g, " ").trim();
+    if (clean.split(" ").length > 50) return;
+
+    const utter = new SpeechSynthesisUtterance(clean);
+    utter.lang = "en-GB";
+    utter.rate = 1;
+    utter.pitch = 1;
+
+    const voice =
+      availableVoices.find(v => v.lang === "en-GB" && v.name.toLowerCase().includes("female")) ||
+      availableVoices.find(v => v.lang === "en-GB") ||
+      availableVoices[0];
+
+    utter.voice = voice;
+    setTimeout(() => speechSynthesis.speak(utter), 200);
+  }
+
+  // 🖱️ Unlock audio on click
+  document.body.addEventListener("click", () => {
+    if (!speechSynthesis.speaking) {
+      speechSynthesis.speak(new SpeechSynthesisUtterance(""));
+    }
+  }, { once: true });
+
+  // Buttons
+  sendBtn.addEventListener("click", sendMessage);
+  userInput.addEventListener("keypress", (e) => e.key === "Enter" && sendMessage());
+  predictBtn.addEventListener("click", () => { userInput.value = "Predict Match"; sendMessage(); });
+  askBtn.addEventListener("click", () => { userInput.value = "Ask Question"; sendMessage(); });
+</script>

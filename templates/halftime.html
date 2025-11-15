@@ -39,6 +39,21 @@ nav a {
 nav a:hover {
     color: #00ffcc;
 }
+
+/* 🔴 Logout red button */
+nav a.logout-btn {
+    background: #ff4d4d;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-weight: 600;
+    color: #fff !important;
+    transition: 0.3s;
+}
+nav a.logout-btn:hover {
+    background: #ff1a1a;
+    transform: scale(1.05);
+}
+
 main {
     flex: 1;
     display: flex;
@@ -62,8 +77,8 @@ main {
     transform: scale(1.02);
 }
 #left-frame {
-    min-height: 465px;        /* ⬅️ Only left frame is taller */
-    padding-bottom: 60px;     /* ⬅️ Add a bit more space at bottom */
+    min-height: 465px;
+    padding-bottom: 60px;
 }
 @keyframes fadeIn {
     from {opacity: 0; transform: translateY(20px);}
@@ -149,12 +164,11 @@ footer {
         <a href="{{ url_for('stats') }}">Stats</a>
         <a href="{{ url_for('chatbot') }}">AI Chat</a>
         <a href="{{ url_for('live') }}">Live</a>
-        <a href="{{ url_for('logout') }}">Logout</a>
+        <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
     </nav>
 </header>
 
 <main>
-    <!-- Left Frame: Halftime Inputs -->
     <div class="frame" id="left-frame">
         <h2>Enter Halftime Details</h2>
         <form action="{{ url_for('halftime') }}" method="POST">
@@ -184,7 +198,6 @@ footer {
         </form>
     </div>
 
-    <!-- Right Frame: Results -->
     <div class="frame">
         <h2>Prediction Result</h2>
         {% if prediction %}

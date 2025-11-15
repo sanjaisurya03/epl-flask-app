@@ -23,7 +23,11 @@
             justify-content: space-between;
             align-items: center;
         }
-        header h1 { margin: 0; font-size: 24px; color: #fff; }
+        header h1 { 
+            margin: 0; 
+            font-size: 24px; 
+            color: #fff; 
+        }
         nav a {
             color: #fff;
             text-decoration: none;
@@ -31,7 +35,23 @@
             font-weight: 500;
             transition: 0.3s;
         }
-        nav a:hover { color: #00bfff; }
+        nav a:hover { 
+            color: #00bfff; 
+        }
+
+        /* 🔴 LOGOUT RED BUTTON */
+        nav a.logout-btn {
+            background: #ff4d4d;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-weight: 600;
+            color: #fff !important;
+            transition: 0.3s;
+        }
+        nav a.logout-btn:hover {
+            background: #ff1a1a;
+            transform: scale(1.05);
+        }
 
         .container {
             background: rgba(255, 255, 255, 0.1);
@@ -42,7 +62,11 @@
             margin: 40px auto;
             box-shadow: 0 0 15px rgba(0,0,0,0.2);
         }
-        h2 { font-size: 24px; margin-bottom: 20px; text-align: center; }
+        h2 { 
+            font-size: 24px; 
+            margin-bottom: 20px; 
+            text-align: center; 
+        }
 
         label {
             display: block;
@@ -72,7 +96,9 @@
             font-size: 16px;
             transition: 0.3s;
         }
-        button:hover { background-color: #0099cc; }
+        button:hover { 
+            background-color: #0099cc; 
+        }
 
         .result {
             margin-top: 25px;
@@ -81,8 +107,15 @@
             border-radius: 15px;
             text-align: left;
         }
-        .result p { margin: 8px 0; font-size: 16px; }
-        .result .outcome { font-weight: bold; font-size: 18px; color: #00ffcc; }
+        .result p { 
+            margin: 8px 0; 
+            font-size: 16px; 
+        }
+        .result .outcome { 
+            font-weight: bold; 
+            font-size: 18px; 
+            color: #00ffcc; 
+        }
 
         footer {
             text-align: center;
@@ -96,15 +129,16 @@
     </style>
 </head>
 <body>
+
     <header>
-        <h1>⚽ EPL Match Predictor</h1>
+        <h1>EPL Match Predictor</h1>
         <nav>
             <a href="{{ url_for('home') }}">Home</a>
             <a href="{{ url_for('predict') }}">Predict</a>
             <a href="{{ url_for('stats') }}">Stats</a>
             <a href="{{ url_for('chatbot') }}">AI Chat</a>
             <a href="{{ url_for('live') }}">Live</a>
-            <a href="{{ url_for('logout') }}">Logout</a>
+            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
         </nav>
     </header>
 
@@ -146,5 +180,6 @@
     <footer>
         Premier League Predictor © 2025
     </footer>
+
 </body>
 </html>

@@ -21,8 +21,29 @@
         z-index: 100;
     }
     header h1 { font-size: 26px; color: #fff; }
-    nav a { color: #fff; text-decoration: none; margin-left: 25px; font-weight: 500; transition: 0.3s; }
+    nav a { 
+        color: #fff; 
+        text-decoration: none; 
+        margin-left: 25px; 
+        font-weight: 500; 
+        transition: 0.3s; 
+        padding: 6px 10px;
+        border-radius: 6px;
+    }
     nav a:hover { color: #00bfff; transform: scale(1.05); }
+
+    /* 🔥 Red Logout Button */
+    .logout-btn {
+        background: #ff4d4d;
+        padding: 6px 14px;
+        border-radius: 6px;
+        color: white !important;
+        font-weight: 600;
+    }
+    .logout-btn:hover {
+        background: #cc0000;
+        transform: scale(1.08);
+    }
 
     /* Hero Section */
     .hero {
@@ -95,7 +116,10 @@
 
     /* Animations */
     .fade-in { animation: fadeIn 1.5s ease-in; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { 
+        from { opacity: 0; transform: translateY(20px); } 
+        to { opacity: 1; transform: translateY(0); } 
+    }
 
     @media (max-width: 700px) {
         .features { padding: 40px 20px; gap: 20px; }
@@ -116,7 +140,7 @@
         <a href="{{ url_for('stats') }}">Stats</a>
         <a href="{{ url_for('chatbot') }}">AI Chat</a>
         <a href="{{ url_for('live') }}">Live</a>
-        <a href="{{ url_for('logout') }}">Logout</a>
+        <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
     </nav>
 </header>
 

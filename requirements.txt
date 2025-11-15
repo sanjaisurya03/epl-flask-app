@@ -1,11 +1,17 @@
 Flask==3.0.3
+Werkzeug==3.0.3
+flask-cors
 pandas
 numpy
 requests
 matplotlib
 google-generativeai
+protobuf
+python-dateutil
 mysql-connector-python
+PyMySQL
 gunicorn==21.2.0
 psycopg2-binary==2.9.9
 scikit-learn
 python-dotenv
+cachetools
